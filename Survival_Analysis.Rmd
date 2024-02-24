@@ -1,0 +1,72 @@
+1) Load hwdata1.csv datset into R.
+```{r}
+data = read.csv("./data/hwdata1.csv",header=T)
+head(data)
+```
+
+
+```{r}
+library(survival)
+fit1 = coxph(Surv(rectime,censrec)~hormone,data=data,
+            ties="efron")
+-2*logLik(fit1)
+
+summary(fit1)
+```
+
+```{r}
+library(survival)
+fit2 = coxph(Surv(rectime,censrec)~hormone+age+menopause+size+nodes,data=data,
+            ties="efron")
+
+-2*logLik(fit2)
+summary(fit2)
+```
+
+```{r}
+1-pchisq(57.078, df=6)
+```
+
+```{r}
+library(survival)
+data$hormone = factor(data$hormone, levels=c("2", "1"))
+data$menopause = factor(data$menopause, levels=c("2", "1"))
+fit3 = coxph(Surv(rectime,censrec)~hormone+age+menopause+size+nodes+hormone*nodes,data=data,
+            ties="efron")
+
+summary(fit3)
+-2*logLik(fit3)
+fit3$var[1,6]
+fit3$var[1,1]
+fit3$var[6,6]
+
+```
+
+```{r}
+library(rms)
+dd=datadist(data)
+options(datadist="dd")
+ctr=contrast(cph(Surv(rectime,censrec)~hormone+age+menopause+size+nodes+hormone*nodes,data=data,
+            ties="efron"),
+            list(hormone=1,nodes=5),
+            list(hormone=2,nodes=5))
+  
+print(ctr,fun=exp)
+```
+
+```{r}
+library(ggsurvfit)
+
+survfit2(fit3,newdata=data.frame(hormone="2",menopause="2",age=53, size=25,nodes=3)) |> 
+  ggsurvfit()+
+  add_confidence_interval()+
+  scale_y_continuous(limits=c(0,1))
+```
+
+```{r}
+
+fit3.newdata=survfit(fit3,newdata=data.frame(hormone="2",menopause="2",age=53, size=25,nodes=3))
+
+summary(fit3.newdata)
+```
+
